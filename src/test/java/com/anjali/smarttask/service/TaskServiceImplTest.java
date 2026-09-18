@@ -41,7 +41,7 @@ class TaskServiceImplTest {
     }
     @Test void statusMissingTask() { assertThrows(TaskNotFoundException.class, () -> service.updateStatus(9L, TaskStatus.TODO)); }
     @Test void deleteExistingTask() { Task task = task(); when(repository.findById(1L)).thenReturn(Optional.of(task)); service.delete(1L); verify(repository).delete(task); }
-    @Test void deleteMissingTask() { assertThrows(TaskNotFoundException.class, () -> service.delete(9L)); verify(repository, never()).delete(any()); }
+    @Test void deleteMissingTask() { assertThrows(TaskNotFoundException.class, () -> service.delete(9L)); verify(repository, never()).delete(any(Task.class)); }
     @Test void listWithoutFilters() { when(repository.findAll(ArgumentMatchers.<Specification<Task>>any())).thenReturn(List.of(task())); assertEquals(1, service.list(null, null).size()); }
     @Test void listWithStatusFilter() { when(repository.findAll(ArgumentMatchers.<Specification<Task>>any())).thenReturn(List.of(task())); assertEquals(TaskStatus.TODO, service.list(TaskStatus.TODO, null).get(0).status()); }
     @Test void listWithPriorityFilter() { when(repository.findAll(ArgumentMatchers.<Specification<Task>>any())).thenReturn(List.of(task())); assertEquals(TaskPriority.HIGH, service.list(null, TaskPriority.HIGH).get(0).priority()); }
