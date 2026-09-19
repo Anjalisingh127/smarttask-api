@@ -43,6 +43,15 @@ Priorities: `LOW`, `MEDIUM`, `HIGH`. Statuses: `TODO`, `IN_PROGRESS`, `COMPLETED
 
 See [architecture](docs/architecture.md), [testing](docs/testing.md), and [AI assistance](docs/ai-assisted-development.md). The [Postman collection](docs/SmartTask.postman_collection.json) provides example requests.
 
+## Verification
+
+Verified locally on Windows 11 with Java 22, Maven 3.9.11, and MySQL 8.0.36:
+
+- `mvn clean verify` completed successfully with 22 tests, 0 failures, 0 errors, and 0 skipped.
+- Spring Boot started on port 8080 and exposed all six task operations through Swagger UI.
+- `POST /api/tasks` returned `201 Created`, applied the default `TODO` status, and returned a `Location` header.
+- The created task was confirmed in the MySQL `tasks` table, verifying JPA/Hibernate persistence.
+
 ## Honest scope
 
 This is a portfolio API for local execution. The public GitHub URL hosts the **source code**, not a deployed server. Production deployments would need controlled schema migrations, credentials management, authentication, and operational monitoring. Do not claim measured coverage or runtime performance until verified.
