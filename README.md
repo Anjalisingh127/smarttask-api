@@ -22,6 +22,87 @@ mvn spring-boot:run
 
 Open `http://localhost:8080/swagger-ui.html` for interactive API documentation and `http://localhost:8080/v3/api-docs` for OpenAPI JSON. Tests mock the repository and do not require MySQL. `mvn verify` writes a local coverage report to `target/site/jacoco/index.html`.
 
+## Architecture
+
+SmartTask follows a layered backend architecture:
+
+```text
+HTTP Client / Swagger UI
+          |
+     TaskController
+          |
+      TaskService
+          |
+    TaskRepository
+          |
+    JPA / Hibernate
+          |
+        MySQL
+```
+
+- **Controller layer:** Handles HTTP requests, validation, response codes, and DTOs.
+- **Service layer:** Implements task-management business logic and entity-to-response mapping.
+- **Repository layer:** Uses Spring Data JPA for database access.
+- **Persistence layer:** Stores task records in MySQL through Hibernate.
+- **Error handling:** Converts validation failures and missing resources into consistent JSON responses.
+- **API documentation:** Exposes an interactive Swagger UI and an OpenAPI JSON specification.
+
+The API and MySQL database can run locally or as separate Docker containers managed by Docker Compose.
+
+## Run with Docker
+
+### Prerequisites
+
+- Docker Desktop
+- Docker Compose
+
+Create your local environment file from the committed template:
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Replace the placeholder values inside `.env`. Never commit this file.
+
+Build and start the API and MySQL containers:
+
+```bash
+docker compose up --build
+```
+
+After both containers start, open:
+
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+
+Check container health:
+
+```bash
+docker compose ps
+```
+
+Stop the containers without deleting stored task data:
+
+```bash
+docker compose down
+```
+
+To remove the containers and the MySQL data volume:
+
+```bash
+docker compose down --volumes
+```
+
+> `docker compose down --volumes` permanently deletes the Docker-managed database data.
+
+Docker Compose exposes the API on port `8080` and the containerized MySQL server on host port `3307`, avoiding a conflict with a locally installed MySQL server on port `3306`.
+
 ## Try the API
 
 ```bash
@@ -52,6 +133,8 @@ Verified locally on Windows 11 with Java 22, Maven 3.9.11, and MySQL 8.0.36:
 - Spring Boot started on port 8080 and exposed all six task operations through Swagger UI.
 - `POST /api/tasks` returned `201 Created`, applied the default `TODO` status, and returned a `Location` header.
 - The created task was confirmed in the MySQL `tasks` table, verifying JPA/Hibernate persistence.
+- Docker Compose successfully started separate Spring Boot and MySQL containers, with MySQL reporting a healthy status.
+- A task created through the containerized API remained available after both containers restarted, verifying named-volume persistence.
 
 ## Honest scope
 
