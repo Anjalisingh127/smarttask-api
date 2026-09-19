@@ -55,4 +55,4 @@ Verified locally on Windows 11 with Java 22, Maven 3.9.11, and MySQL 8.0.36:
 
 ## Honest scope
 
-This is a portfolio API for local execution. The public GitHub URL hosts the **source code**, not a deployed server. Production deployments would need controlled schema migrations, credentials management, authentication, and operational monitoring. Do not claim measured coverage or runtime performance until verified.
+This is a portfolio API for local execution. The public GitHub URL hosts the **source code**, not a deployed server. Production deployments would need controlled schema migrations, credentials management, authentication, and operational monitoring. Test coverage is measured by JaCoCo and reproducible with `mvn clean verify`; runtime performance has not been benchmarked.
