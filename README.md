@@ -48,6 +48,7 @@ See [architecture](docs/architecture.md), [testing](docs/testing.md), and [AI as
 Verified locally on Windows 11 with Java 22, Maven 3.9.11, and MySQL 8.0.36:
 
 - `mvn clean verify` completed successfully with 22 tests, 0 failures, 0 errors, and 0 skipped.
+- JaCoCo measured 90.91% line coverage (60 of 66 lines) and 100% branch coverage (4 of 4 branches).
 - Spring Boot started on port 8080 and exposed all six task operations through Swagger UI.
 - `POST /api/tasks` returned `201 Created`, applied the default `TODO` status, and returned a `Location` header.
 - The created task was confirmed in the MySQL `tasks` table, verifying JPA/Hibernate persistence.
