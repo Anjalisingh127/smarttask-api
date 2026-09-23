@@ -1,11 +1,149 @@
 # SmartTask API
 
-Java 17 / Spring Boot task management REST API. Layered controller → service → repository design, MySQL persistence, input validation, JUnit and Mockito tests, and generated OpenAPI docs. No frontend or login system.
+[![Java 17](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/17/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Java CI](https://github.com/Anjalisingh127/smarttask-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Anjalisingh127/smarttask-api/actions/workflows/ci.yml)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 
-## Requirements
+SmartTask API is a production-style REST API for managing tasks. It demonstrates layered Spring Boot design, input validation, consistent error handling, MySQL-compatible persistence, automated tests, Docker packaging, CI, and cloud deployment.
 
-- JDK 17 or newer, Maven 3.9+, MySQL 8+
-- Create a local database and account (example; change the password for your machine):
+> **Live deployment:** [Open Swagger UI](https://smarttask-api-esz2.onrender.com/swagger-ui/index.html)  
+> The Render free service may take a short time to wake up after inactivity.
+
+## Live links
+
+| Resource | URL |
+| --- | --- |
+| Interactive API documentation | [Swagger UI](https://smarttask-api-esz2.onrender.com/swagger-ui/index.html) |
+| OpenAPI specification | [OpenAPI JSON](https://smarttask-api-esz2.onrender.com/v3/api-docs) |
+| Example deployed request | [GET /api/tasks/1](https://smarttask-api-esz2.onrender.com/api/tasks/1) |
+| Source code | [GitHub repository](https://github.com/Anjalisingh127/smarttask-api) |
+
+## What this project demonstrates
+
+- RESTful CRUD operations with meaningful HTTP status codes
+- A controller → service → repository architecture
+- DTO-based request and response models
+- Bean Validation for API input
+- Centralized JSON error responses
+- JPA/Hibernate persistence with MySQL or TiDB Cloud
+- Filtering tasks by status and priority
+- OpenAPI documentation through Swagger UI
+- Unit and controller tests with JUnit 5, Mockito, and MockMvc
+- Multi-stage Docker builds and Docker Compose
+- GitHub Actions checks for Maven tests and Docker image builds
+- Deployment on Render with a managed TiDB Cloud database
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Client["Client / Swagger UI"] --> Controller["Task Controller"]
+    Controller --> Service["Task Service"]
+    Service --> Repository["Task Repository"]
+    Repository --> Database["JPA / Hibernate<br/>MySQL or TiDB Cloud"]
+```
+
+| Layer | Responsibility |
+| --- | --- |
+| Controller | Maps HTTP requests, validates input, and returns response codes |
+| Service | Applies business rules and maps entities to response DTOs |
+| Repository | Uses Spring Data JPA for task persistence and queries |
+| Model and DTOs | Separate database entities from the public API contract |
+| Exception handling | Converts validation and missing-resource failures into consistent JSON |
+| Persistence | Stores tasks in a MySQL-compatible relational database |
+
+### Request flow
+
+1. A client sends an HTTP request to a task endpoint.
+2. The controller validates the request DTO.
+3. The service applies task-management rules.
+4. The repository reads or writes task records.
+5. The API returns a response DTO or a structured error.
+
+More detail is available in [docs/architecture.md](docs/architecture.md).
+
+## Technology stack
+
+| Area | Technology |
+| --- | --- |
+| Language | Java 17 |
+| Framework | Spring Boot 3.5.6 |
+| Web | Spring Web |
+| Persistence | Spring Data JPA, Hibernate |
+| Database | MySQL 8 locally; TiDB Cloud in production |
+| Validation | Jakarta Bean Validation |
+| API documentation | springdoc-openapi and Swagger UI |
+| Testing | JUnit 5, Mockito, Spring MockMvc |
+| Coverage | JaCoCo |
+| Packaging | Maven, Docker multi-stage build |
+| Local orchestration | Docker Compose |
+| CI | GitHub Actions |
+| Deployment | Render and TiDB Cloud |
+
+## API endpoints
+
+Base path: `/api/tasks`
+
+| Method | Endpoint | Description | Success |
+| --- | --- | --- | --- |
+| `POST` | `/api/tasks` | Create a task | `201 Created` |
+| `GET` | `/api/tasks` | List tasks; optionally filter by status and priority | `200 OK` |
+| `GET` | `/api/tasks/{id}` | Retrieve one task | `200 OK` |
+| `PUT` | `/api/tasks/{id}` | Replace a task's editable fields | `200 OK` |
+| `PATCH` | `/api/tasks/{id}/status` | Update only the task status | `200 OK` |
+| `DELETE` | `/api/tasks/{id}` | Delete a task | `204 No Content` |
+
+Supported values:
+
+- Priority: `LOW`, `MEDIUM`, `HIGH`
+- Status: `TODO`, `IN_PROGRESS`, `COMPLETED`
+
+### Example request
+
+```bash
+curl -i -X POST "https://smarttask-api-esz2.onrender.com/api/tasks" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Prepare release",
+    "description": "Verify the deployed API",
+    "priority": "HIGH"
+  }'
+```
+
+Example successful response:
+
+```json
+{
+  "id": 2,
+  "title": "Prepare release",
+  "description": "Verify the deployed API",
+  "priority": "HIGH",
+  "status": "TODO",
+  "createdAt": "2026-09-23T17:45:40.519824Z",
+  "updatedAt": "2026-09-23T17:45:40.519824Z"
+}
+```
+
+Validation and missing records return structured errors:
+
+```json
+{
+  "status": 400,
+  "message": "title: must not be blank",
+  "timestamp": "2026-09-23T17:45:40Z"
+}
+```
+
+## Run locally
+
+### Prerequisites
+
+- JDK 17 or newer
+- Maven 3.9+
+- MySQL 8+
+
+### 1. Create a local database and user
 
 ```sql
 CREATE DATABASE smarttask;
@@ -13,87 +151,68 @@ CREATE USER 'smarttask'@'localhost' IDENTIFIED BY 'choose-a-local-password';
 GRANT ALL PRIVILEGES ON smarttask.* TO 'smarttask'@'localhost';
 ```
 
-Set `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` as environment variables. `DB_URL` defaults to `jdbc:mysql://localhost:3306/smarttask`; the default username and password are both `smarttask` for local development only. The example SQL above needs `DB_PASSWORD` set to the chosen password. Never commit credentials.
+### 2. Configure environment variables
+
+PowerShell:
+
+```powershell
+$env:DB_URL = "jdbc:mysql://localhost:3306/smarttask"
+$env:DB_USERNAME = "smarttask"
+$env:DB_PASSWORD = "choose-a-local-password"
+```
+
+Bash:
+
+```bash
+export DB_URL="jdbc:mysql://localhost:3306/smarttask"
+export DB_USERNAME="smarttask"
+export DB_PASSWORD="choose-a-local-password"
+```
+
+Never commit database credentials.
+
+### 3. Build and start the application
 
 ```bash
 mvn clean verify
 mvn spring-boot:run
 ```
 
-Open `http://localhost:8080/swagger-ui.html` for interactive API documentation and `http://localhost:8080/v3/api-docs` for OpenAPI JSON. Tests mock the repository and do not require MySQL. `mvn verify` writes a local coverage report to `target/site/jacoco/index.html`.
+Then open:
 
-## Architecture
+- Swagger UI: <http://localhost:8080/swagger-ui.html>
+- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
 
-SmartTask follows a layered backend architecture:
+## Run with Docker Compose
 
-```text
-HTTP Client / Swagger UI
-          |
-     TaskController
-          |
-      TaskService
-          |
-    TaskRepository
-          |
-    JPA / Hibernate
-          |
-        MySQL
-```
-
-- **Controller layer:** Handles HTTP requests, validation, response codes, and DTOs.
-- **Service layer:** Implements task-management business logic and entity-to-response mapping.
-- **Repository layer:** Uses Spring Data JPA for database access.
-- **Persistence layer:** Stores task records in MySQL through Hibernate.
-- **Error handling:** Converts validation failures and missing resources into consistent JSON responses.
-- **API documentation:** Exposes an interactive Swagger UI and an OpenAPI JSON specification.
-
-The API and MySQL database can run locally or as separate Docker containers managed by Docker Compose.
-
-## Run with Docker
-
-### Prerequisites
-
-- Docker Desktop
-- Docker Compose
-
-Create your local environment file from the committed template:
+Docker Compose starts the API and a MySQL 8 container. Copy the environment template first:
 
 ```bash
 cp .env.example .env
 ```
 
-On Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Replace the placeholder values inside `.env`. Never commit this file.
-
-Build and start the API and MySQL containers:
+Replace the placeholders in `.env`, then run:
 
 ```bash
 docker compose up --build
-```
-
-After both containers start, open:
-
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
-
-Check container health:
-
-```bash
 docker compose ps
 ```
 
-Stop the containers without deleting stored task data:
+The API is available on port `8080`. MySQL is exposed on host port `3307` to avoid conflict with a local MySQL server on `3306`.
+
+Stop the containers while preserving data:
 
 ```bash
 docker compose down
 ```
 
-To remove the containers and the MySQL data volume:
+Remove the containers and database volume:
 
 ```bash
 docker compose down --volumes
@@ -101,41 +220,116 @@ docker compose down --volumes
 
 > `docker compose down --volumes` permanently deletes the Docker-managed database data.
 
-Docker Compose exposes the API on port `8080` and the containerized MySQL server on host port `3307`, avoiding a conflict with a locally installed MySQL server on port `3306`.
+## Testing and quality
 
-## Try the API
+Run the complete verification suite:
 
 ```bash
-curl -i -X POST http://localhost:8080/api/tasks -H 'Content-Type: application/json' -d '{"title":"Fix API","description":"Add tests","priority":"HIGH"}'
-curl 'http://localhost:8080/api/tasks?priority=HIGH&status=TODO'
-curl -X PATCH http://localhost:8080/api/tasks/1/status -H 'Content-Type: application/json' -d '{"status":"IN_PROGRESS"}'
+mvn clean verify
 ```
 
-| Method | Path | Result |
-| --- | --- | --- |
-| POST | `/api/tasks` | 201, new task and Location header |
-| GET | `/api/tasks` | 200, list; optional `status` and `priority` filters |
-| GET | `/api/tasks/{id}` | 200 or 404 |
-| PUT | `/api/tasks/{id}` | 200 or 404; replaces title, description, priority; preserves status |
-| PATCH | `/api/tasks/{id}/status` | 200 or 404 |
-| DELETE | `/api/tasks/{id}` | 204 or 404 |
+Current verified results:
 
-Priorities: `LOW`, `MEDIUM`, `HIGH`. Statuses: `TODO`, `IN_PROGRESS`, `COMPLETED`. A new task starts in `TODO`. Bad JSON or invalid input receives a 400 error with `status`, `message`, and `timestamp`; missing IDs receive 404. Status changes allow any enum value; no restrictive transition policy is implied.
+- 22 automated tests
+- 0 failures, 0 errors, and 0 skipped tests
+- 90.91% line coverage (60 of 66 lines)
+- 100% branch coverage (4 of 4 branches)
 
-See [architecture](docs/architecture.md), [testing](docs/testing.md), and [AI assistance](docs/ai-assisted-development.md). The [Postman collection](docs/SmartTask.postman_collection.json) provides example requests.
+The JaCoCo HTML report is generated at `target/site/jacoco/index.html`. Tests mock the repository and do not require a running database.
 
-## Verification
+See [docs/testing.md](docs/testing.md) for the test strategy.
 
-Verified locally on Windows 11 with Java 22, Maven 3.9.11, and MySQL 8.0.36:
+## CI pipeline
 
-- `mvn clean verify` completed successfully with 22 tests, 0 failures, 0 errors, and 0 skipped.
-- JaCoCo measured 90.91% line coverage (60 of 66 lines) and 100% branch coverage (4 of 4 branches).
-- Spring Boot started on port 8080 and exposed all six task operations through Swagger UI.
-- `POST /api/tasks` returned `201 Created`, applied the default `TODO` status, and returned a `Location` header.
-- The created task was confirmed in the MySQL `tasks` table, verifying JPA/Hibernate persistence.
-- Docker Compose successfully started separate Spring Boot and MySQL containers, with MySQL reporting a healthy status.
-- A task created through the containerized API remained available after both containers restarted, verifying named-volume persistence.
+Every push and pull request runs GitHub Actions checks for:
 
-## Honest scope
+1. Maven compilation and tests
+2. JaCoCo report generation and upload
+3. Docker Compose configuration validation
+4. Docker image build validation
 
-This is a portfolio API for local execution. The public GitHub URL hosts the **source code**, not a deployed server. Production deployments would need controlled schema migrations, credentials management, authentication, and operational monitoring. Test coverage is measured by JaCoCo and reproducible with `mvn clean verify`; runtime performance has not been benchmarked.
+```mermaid
+flowchart LR
+    Push["Push / Pull Request"] --> Tests["Maven tests"]
+    Push --> Docker["Docker validation"]
+    Tests --> Report["Coverage artifact"]
+    Docker --> Image["API image build"]
+```
+
+## Deployment
+
+```mermaid
+flowchart TD
+    GitHub["GitHub repository"] --> Render["Render web service"]
+    Render --> API["Spring Boot container"]
+    API --> TiDB["TiDB Cloud<br/>MySQL compatible"]
+```
+
+Production configuration is supplied through environment variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `DB_URL` | JDBC connection URL |
+| `DB_USERNAME` | Database username |
+| `DB_PASSWORD` | Database password |
+| `PORT` | HTTP port provided by the hosting platform |
+
+No credentials are stored in the repository.
+
+## Project structure
+
+```text
+smarttask-api/
+├── .github/workflows/ci.yml
+├── docs/
+├── src/
+│   ├── main/java/com/anjali/smarttask/
+│   │   ├── controller/
+│   │   ├── dto/
+│   │   ├── exception/
+│   │   ├── factory/
+│   │   ├── model/
+│   │   ├── repository/
+│   │   └── service/
+│   ├── main/resources/application.properties
+│   └── test/
+├── Dockerfile
+├── compose.yaml
+└── pom.xml
+```
+
+## Design decisions
+
+- DTOs prevent persistence entities from becoming the public API contract.
+- Constructor injection keeps dependencies explicit and testable.
+- The service layer owns business logic instead of placing it in controllers.
+- Centralized exception handling keeps error responses consistent.
+- Environment-based configuration supports local, containerized, and cloud execution.
+- A named Docker volume preserves local database data across container restarts.
+
+## Verified behavior
+
+The project has been exercised beyond automated tests:
+
+- CRUD operations were verified through Swagger UI.
+- Created tasks were confirmed in the database.
+- Docker Compose successfully started separate API and MySQL containers.
+- Task data remained available after container restarts.
+- The deployed Render service successfully reads and writes TiDB Cloud data.
+- The GitHub Actions Maven and Docker jobs completed successfully.
+
+## Current scope
+
+This is a backend portfolio project. It intentionally does not include a frontend, authentication, user ownership, pagination, or production observability.
+
+Possible next improvements include Spring Security with JWT, pagination and sorting, database migrations with Flyway, integration tests with Testcontainers, and centralized logging or metrics.
+
+## Additional resources
+
+- [Architecture notes](docs/architecture.md)
+- [Testing strategy](docs/testing.md)
+- [Postman collection](docs/SmartTask.postman_collection.json)
+
+## Author
+
+**Anjali Singh** — [GitHub](https://github.com/Anjalisingh127)
